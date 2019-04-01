@@ -17,10 +17,11 @@ All commands operate on the current directory
 
 As a study, Fool only works with text files right now. That was easiest to code and is easiest to play with. In fact, even the database is in easily-readable text files. It also ignores hidden files (again, because that was easier than adding ignore file support).
 
-Like Git, fool creates a hidden folder at the root of the current directory (though Fool doesn't require an `init` command, it just implicitly creates it when you commit). The hidden folder contains two sub-folders:
+Like Git, fool creates a hidden folder at the root of the current directory (though Fool doesn't require an `init` command, it just implicitly creates it when you commit). The hidden folder contains 3 sub-folders:
 
 * **objects** This folder contains the files' contents, with their name the hash of the file
-* **commits** this folder contains the directory structure for each commit, with one file per line. The line starts with the hash of the contents for this file, followed by a space, followed by the relative path where the file will be written (including its name).
+* **commits** this folder contains the directory structure for each commit, with one file per line. The line starts with the hash of the contents for this file, followed by a space, followed by the relative path where the file will be written (including its name). This file also contains the 
+* **branches** This folder contains a file for each branch, holding the hash of the latest commit in that branch. There is also a special file in here, ".current", which contains the name of the current branch.
 
 ## License
 

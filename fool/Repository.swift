@@ -45,6 +45,7 @@ class Repository {
 		commitsDir = database.appendingPathComponent("commits", isDirectory: true)
 		branchesDir = database.appendingPathComponent("branches", isDirectory: true)
 
+		// Determine what branch we're on and what commit that corresponds to:
 		if FileManager.default.fileExists(atPath: branchesDir.path) {
 			let branchUrl = branchesDir.appendingPathComponent(".current.txt")
 			if FileManager.default.fileExists(atPath: branchUrl.path) {
@@ -114,6 +115,7 @@ class Repository {
 			return
 		}
 		
+		// Check if the revision we were given is actually a branch name, if yes, look up the revision for that branch:
 		let branchUrl = branchesDir.appendingPathComponent("\(actualRevision).txt")
 		if FileManager.default.fileExists(atPath: branchUrl.path) {
 			let branchRevision = try String(contentsOf: branchUrl, encoding: .utf8)

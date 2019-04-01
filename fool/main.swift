@@ -31,8 +31,11 @@ import Foundation
 func printSyntax() {
 	print("Syntax:")
 	print("\tfool commit - Commit changes to the repository.")
-	print("\tfool checkout [revision] - Check out the given revision (or the latest revision) from the repository.")
+	print("\tfool checkout [revision|branch] - Check out the given revision or the latest revision, or a particular branch from the repository.")
+	print("\tfool log - Display the commit hashes for the current branch, in order from newest to oldest.")
 	print("\tfool status - Display the status of the working copy, which files have changed, been added, deleted.")
+	print("\tfool branch <branch name> - Create a new branch at the current commit.")
+	print("\tfool branches - List all the branches in this repository.")
 }
 
 // MARK: entry point
