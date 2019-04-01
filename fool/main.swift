@@ -27,6 +27,7 @@
 
 import Foundation
 
+
 func printSyntax() {
 	print("Syntax:")
 	print("\tfool commit - Commit changes to the repository.")
@@ -45,7 +46,9 @@ if CommandLine.arguments.count < 2 {
 } else if CommandLine.arguments[1] == "status" {
 	try repo.status()
 } else if CommandLine.arguments[1] == "checkout" {
-	try repo.checkout(revision: Int(CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "0") ?? 0)
+	try repo.checkout(revision: (CommandLine.arguments.count > 2) ? CommandLine.arguments[2] : "")
+} else if CommandLine.arguments[1] == "log" {
+	try repo.log()
 } else {
 	printSyntax()
 }

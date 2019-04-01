@@ -32,8 +32,10 @@ class Repository {
 	let database: URL
 	let objectsDir: URL
 	let commitsDir: URL
-	var revision: Int = 0
-	
+	let branchesDir: URL
+	var head: String = ""
+	var branch: String = "master"
+
 	init(url: URL) throws {
 		self.url = url
 		
@@ -41,20 +43,21 @@ class Repository {
 		database = url.appendingPathComponent(".fool", isDirectory: true)
 		objectsDir = database.appendingPathComponent("objects", isDirectory: true)
 		commitsDir = database.appendingPathComponent("commits", isDirectory: true)
-		
-		// Count the number of files in "commits" directory to initialize our highest commit ID:
-		if FileManager.default.fileExists(atPath: commitsDir.path) {
-			revision = try FileManager.default.contentsOfDirectory(at: commitsDir, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsPackageDescendants, .skipsHiddenFiles]).count
+		branchesDir = database.appendingPathComponent("branches", isDirectory: true)
+
+		if FileManager.default.fileExists(atPath: branchesDir.path) {
+			head = (try? String(contentsOf: branchesDir.appendingPathComponent("head.txt"), encoding: .utf8)) ?? ""
 		}
 	}
 	
 	func commit() throws {
-		var commit = ""
+		var commit = "\(head)\n"
 		
 		// Ensure our metadata folder and the subfolders we need to store commits exist:
 		try FileManager.default.createDirectory(at: objectsDir, withIntermediateDirectories: true, attributes: nil)
 		try FileManager.default.createDirectory(at: commitsDir, withIntermediateDirectories: true, attributes: nil)
-		
+		try FileManager.default.createDirectory(at: branchesDir, withIntermediateDirectories: true, attributes: nil)
+
 		// Loop over all files, and add the contents for all new ones to the objects folder:
 		try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsPackageDescendants, .skipsHiddenFiles]).forEach { currFile in
 			var isDirectory: ObjCBool = false
@@ -80,14 +83,20 @@ class Repository {
 		}
 		
 		// Actually create a new commit file with the data we just collected:
-		revision += 1
-		try commit.write(to: commitsDir.appendingPathComponent("\(revision).txt"), atomically: true, encoding: .utf8)
+		head = commit.sha1()
+		try commit.write(to: commitsDir.appendingPathComponent("\(head).txt"), atomically: true, encoding: .utf8)
+		try head.write(to: branchesDir.appendingPathComponent("\(branch).txt"), atomically: true, encoding: .utf8)
+		try head.write(to: branchesDir.appendingPathComponent("head.txt"), atomically: true, encoding: .utf8)
 	}
 	
-	func checkout(revision inputRevision: Int) throws {
+	func checkout(revision inputRevision: String) throws {
 		var actualRevision = inputRevision
-		if actualRevision == 0 {
-			actualRevision = revision
+		if actualRevision == "" {
+			actualRevision = head
+		}
+		if actualRevision == "" {
+			print("Repository is empty.");
+			return
 		}
 		
 		print("Revision \(actualRevision):");
@@ -98,8 +107,13 @@ class Repository {
 		let commitList = try String(contentsOf: commitsDir.appendingPathComponent("\(actualRevision).txt"), encoding: .utf8)
 		
 		var hasChanges = false
+		var parentCommit: String?
 		
 		try commitList.components(separatedBy: CharacterSet.newlines).forEach { currLine in
+			if parentCommit == nil {
+				parentCommit = currLine
+				return
+			}
 			let parts = currLine.split(maxSplits: 1, omittingEmptySubsequences: false, whereSeparator: { $0 == " " })
 			guard parts.count == 2 else { return } // Ignore the trailing empty line in the commits file.
 			
@@ -139,12 +153,12 @@ class Repository {
 	}
 	
 	func status() throws {
-		print("Revision \(revision):");
+		print("Revision \(head):");
 		
 		// List all files in the folder, so we can later detect added files:
 		var addedFiles = try FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsPackageDescendants, .skipsHiddenFiles])
 		
-		let commitList = try String(contentsOf: commitsDir.appendingPathComponent("\(revision).txt"), encoding: .utf8)
+		let commitList = try String(contentsOf: commitsDir.appendingPathComponent("\(head).txt"), encoding: .utf8)
 		
 		var hasChanges = false
 		
@@ -180,6 +194,26 @@ class Repository {
 		
 		if !hasChanges {
 			print("\tNo changes.")
+		}
+	}
+
+	func log() throws {
+		guard branch != "", let revision = try? String(contentsOf: branchesDir.appendingPathComponent("\(branch).txt"), encoding: .utf8) else {
+			print("Empty repository.")
+			return
+		}
+		
+		var currRevision = revision
+
+		while true {
+			print("\(currRevision)")
+			
+			let commitList = try String(contentsOf: commitsDir.appendingPathComponent("\(currRevision).txt"), encoding: .utf8)
+			currRevision = commitList.components(separatedBy: CharacterSet.newlines).first ?? ""
+			
+			if currRevision == "" {
+				break
+			}
 		}
 	}
 }
