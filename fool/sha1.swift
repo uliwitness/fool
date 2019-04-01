@@ -26,26 +26,16 @@
 //
 
 import Foundation
+import CommonCrypto
 
-func printSyntax() {
-	print("Syntax:")
-	print("\tfool commit - Commit changes to the repository.")
-	print("\tfool checkout [revision] - Check out the given revision (or the latest revision) from the repository.")
-	print("\tfool status - Display the status of the working copy, which files have changed, been added, deleted.")
-}
-
-// MARK: entry point
-
-let repo = try Repository(url: URL(fileURLWithPath: FileManager.default.currentDirectoryPath))
-
-if CommandLine.arguments.count < 2 {
-	printSyntax()
-} else if CommandLine.arguments[1] == "commit" {
-	try repo.commit()
-} else if CommandLine.arguments[1] == "status" {
-	try repo.status()
-} else if CommandLine.arguments[1] == "checkout" {
-	try repo.checkout(revision: Int(CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "0") ?? 0)
-} else {
-	printSyntax()
+extension String {
+	func sha1() -> String {
+		let data = Data(self.utf8)
+		var digest = [UInt8](repeating: 0, count:Int(CC_SHA1_DIGEST_LENGTH))
+		data.withUnsafeBytes {
+			_ = CC_SHA1($0.baseAddress, CC_LONG(data.count), &digest)
+		}
+		let hexBytes = digest.map { String(format: "%02hhx", $0) }
+		return hexBytes.joined()
+	}
 }
