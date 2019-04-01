@@ -47,8 +47,12 @@ if CommandLine.arguments.count < 2 {
 	try repo.status()
 } else if CommandLine.arguments[1] == "checkout" {
 	try repo.checkout(revision: (CommandLine.arguments.count > 2) ? CommandLine.arguments[2] : "")
+} else if CommandLine.arguments[1] == "branch" {
+	try repo.branch(name: (CommandLine.arguments.count > 2) ? CommandLine.arguments[2] : "")
 } else if CommandLine.arguments[1] == "log" {
 	try repo.log()
+} else if CommandLine.arguments[1] == "branches" {
+	try repo.branches()
 } else {
 	printSyntax()
 }

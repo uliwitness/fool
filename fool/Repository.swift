@@ -34,7 +34,7 @@ class Repository {
 	let commitsDir: URL
 	let branchesDir: URL
 	var head: String = ""
-	var branch: String = "master"
+	var branch: String = ""
 
 	init(url: URL) throws {
 		self.url = url
@@ -46,8 +46,22 @@ class Repository {
 		branchesDir = database.appendingPathComponent("branches", isDirectory: true)
 
 		if FileManager.default.fileExists(atPath: branchesDir.path) {
-			head = (try? String(contentsOf: branchesDir.appendingPathComponent("head.txt"), encoding: .utf8)) ?? ""
+			let branchUrl = branchesDir.appendingPathComponent(".current.txt")
+			if FileManager.default.fileExists(atPath: branchUrl.path) {
+				let branchName = try String(contentsOf: branchUrl, encoding: .utf8)
+				let branchRevision = try String(contentsOf: branchesDir.appendingPathComponent("\(branchName).txt"), encoding: .utf8)
+				branch = branchName
+				head = branchRevision
+			} else {
+				head = (try? String(contentsOf: branchesDir.appendingPathComponent("head.txt"), encoding: .utf8)) ?? ""
+				branch = "master"
+			}
+		} else {
+			head = ""
+			branch = "master"
 		}
+		
+		print("Branch: \(branch) head: \(head)")
 	}
 	
 	func commit() throws {
@@ -83,10 +97,11 @@ class Repository {
 		}
 		
 		// Actually create a new commit file with the data we just collected:
-		head = commit.sha1()
-		try commit.write(to: commitsDir.appendingPathComponent("\(head).txt"), atomically: true, encoding: .utf8)
-		try head.write(to: branchesDir.appendingPathComponent("\(branch).txt"), atomically: true, encoding: .utf8)
-		try head.write(to: branchesDir.appendingPathComponent("head.txt"), atomically: true, encoding: .utf8)
+		let hash = commit.sha1()
+		try commit.write(to: commitsDir.appendingPathComponent("\(hash).txt"), atomically: true, encoding: .utf8)
+		try hash.write(to: branchesDir.appendingPathComponent("\(branch).txt"), atomically: true, encoding: .utf8)
+		try hash.write(to: branchesDir.appendingPathComponent("head.txt"), atomically: true, encoding: .utf8)
+		head = branch
 	}
 	
 	func checkout(revision inputRevision: String) throws {
@@ -99,6 +114,16 @@ class Repository {
 			return
 		}
 		
+		let branchUrl = branchesDir.appendingPathComponent("\(actualRevision).txt")
+		if FileManager.default.fileExists(atPath: branchUrl.path) {
+			let branchRevision = try String(contentsOf: branchUrl, encoding: .utf8)
+			branch = actualRevision
+			try branch.write(to: branchesDir.appendingPathComponent(".current.txt"), atomically: true, encoding: .utf8)
+			actualRevision = branchRevision
+		}
+		
+		head = actualRevision
+
 		print("Revision \(actualRevision):");
 		
 		// Put the URLs of all files in the working copy into filesToRemove, so we can later delete files not part of this commit:
@@ -215,5 +240,23 @@ class Repository {
 				break
 			}
 		}
+	}
+	
+	func branches() throws {
+		let branches = try FileManager.default.contentsOfDirectory(at: branchesDir, includingPropertiesForKeys: nil, options: [.skipsSubdirectoryDescendants, .skipsPackageDescendants, .skipsHiddenFiles])
+		branches.forEach { url in
+			let branchName = url.deletingPathExtension().lastPathComponent
+			print("\((branchName == branch) ? "> " : "  ")\(branchName)")
+		}
+	}
+	
+	func branch(name: String) throws {
+		let branchUrl = branchesDir.appendingPathComponent("\(name).txt")
+		guard !FileManager.default.fileExists(atPath: branchUrl.path) else {
+			print("Branch already exists. Use checkout to switch branches.")
+			return
+		}
+		try head.write(to: branchUrl, atomically: true, encoding: .utf8)
+		branch = name
 	}
 }
