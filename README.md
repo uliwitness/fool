@@ -11,6 +11,10 @@ All commands operate on the current directory
 * **fool commit** - Commit changes to the repository.
 * **fool checkout [revision]** - Check out the given revision (or the latest revision) from the repository.
 * **fool status** - Display the status of the working copy, which files have changed, been added, deleted.
+* **fool log** - Display the commit hashes for the current branch, in order from newest to oldest.
+* **fool status** - Display the status of the working copy, which files have changed, been added, deleted.
+* **fool branch <branch name>** - Create a new branch at the current commit.
+* **fool branches** - List all the branches in this repository.
 
 
 ## Design
@@ -26,7 +30,7 @@ Like Git, fool creates a hidden folder at the root of the current directory (tho
 ## License
 
 	Copyright 2019 by Uli Kusterer.
-
+	
 	This software is provided 'as-is', without any express or implied
 	warranty. In no event will the authors be held liable for any damages
 	arising from the use of this software.
